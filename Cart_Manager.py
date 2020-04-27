@@ -50,53 +50,13 @@ def cooldown_monitor():
                 already_claimed.remove(i)
             time.sleep(0.98)
 
-while True:
-    amount_type=input("Type or enter \"help\" to learn about types: ")
-    if amount_type=="help":
-        print("TYPES\nt - Time(a cooldown for cart claiming)\na - Amount(Each member can only claim a set amount of carts per session)\nl - List(User ids go in users.txt and each time that id appears is 1 cart for that user)\nrun - Run without waiting for carts for adding users to users.txt remotely\n----------------------------------------------------------------")
-    elif amount_type=="t":
-        while True:
-            try:
-                time_out=int(input("User claim cooldown in seconds: "))
-                break
-            except:
-                print("Not a valid number")
-        print("Time Mode\n----------------------------------------------------------------")
-        x = threading.Thread(target=cooldown_monitor)
-        x.start()
-        break
-    elif amount_type=="a":
-        while True:
-            try:
-                amount_per=int(input("Amount of carts per member: "))
-                break
-            except:
-                print("Not a valid number")
-        print("Amount Mode\n----------------------------------------------------------------")
-        break
-    elif amount_type=="l":
-        try:
-            with open("users.txt","r") as r:
-                authorised_list=r.read().splitlines()
-            #print("Amount of carts authorised: "+str(len(authorised_list)))
-        except FileNotFoundError:
-            print("No users file found")
-        else:
-            print("Error occured")
-        print("List Mode\n----------------------------------------------------------------")
-        break
-    elif amount_type=="run":
-        break
-    else:
-        print("Invalid response, retry.")
-
 
 
 
 #Startup program
 @client.event
 async def on_ready():
-    await client.change_presence(activity=discord.Game("with carts"))
+    await client.change_presence(activity=discord.Game("with modes"))
     global Bots_id
     Bots_id=client.user.id
     if amount_type=="run":
@@ -108,9 +68,12 @@ async def on_ready():
 #when a cart is recieved
 @client.event
 async def on_message(message):
+    global amount_type
     try:
         #ensure cart is in correct channel
-        if message.content.startswith("!addlist") and message.author.id==admin_id:
+        if message.content.startswith("help") and message.author.id==admin_id:
+            await message.channel.send("Commands:\n!changemode\n!addlist\n!purgelist\n!showlist")
+        elif message.content.startswith("!addlist") and message.author.id==admin_id:
             try:
                 msglist=str(message.content).split(" ")
                 if len(msglist)!=3:
@@ -129,6 +92,33 @@ async def on_message(message):
                 await message.channel.send("Purged\n*Created by Clearclarencs#5659    Not for resale*")
             except:
                 await message.channel.send("Error\n*Created by Clearclarencs#5659    Not for resale*")
+        elif message.content.startswith("!changemode") and message.author.id==admin_id:
+            try:
+                msglist=str(message.content).split(" ")
+                if msglist[1] in ["t","a","l","run"]:
+                    if msglist[1]=="t":
+                        amount_type="t"
+                        time_out=int(msglist[2])
+                        cooldown_monitor()
+                        await message.channel.send("Mode changed to: Time")
+                        await client.change_presence(activity=discord.Game("in timer mode"))
+                    elif msglist[1]=="a":
+                        amount_type="a"
+                        amount_per=int(msglist[2])
+                        await message.channel.send("Mode changed to: Ammount")
+                        await client.change_presence(activity=discord.Game("in amount mode"))
+                    elif msglist[1]=="l":
+                        amount_type="l"
+                        await message.channel.send("Mode changed to: List")
+                        await client.change_presence(activity=discord.Game("in list mode"))
+                    elif msglist[1]=="run":
+                        amount_type="run"
+                        await message.channel.send("Mode changed to: Run")
+                        await client.change_presence(activity=discord.Game("with modes"))
+                    else:
+                        raise
+            except:
+                await message.channel.send("Error, type !changelist [t or a or l or run] [setting if applicable\n*Created by Clearclarencs#5659    Not for resale*")
         elif message.content.startswith("!showlist") and message.author.id==admin_id:
             try:
                 with open("users.txt","r") as r:
@@ -136,7 +126,22 @@ async def on_message(message):
                 await message.channel.send(str(usrs)+"\n*Created by Clearclarencs#5659    Not for resale*")
             except:
                 await message.channel.send("Error\n*Created by Clearclarencs#5659    Not for resale*")
-        elif message.channel.id == wraith_channel_id:
+        elif message.content.startswith("!showlist") and message.author.id==admin_id:
+            try:
+                msglist=str(message.content).split(" ")
+                with open("users.txt","r") as r:
+                    usrs=Counter(r.read().splitlines())
+                for i in range(int(msglist[1])):
+                    usrs.remove(str(msglist[2]))
+                with open("users.txt","w") as r:
+                    r.write("")
+                with open("users.txt","a+") as r:
+                    for i in usrs:
+                        r.write(i+"\n")
+                await message.channel.send("Removed "+msglist[2]+" "+msglist[1]+" times.\n*Created by Clearclarencs#5659    Not for resale*")
+            except:
+                await message.channel.send("Error, try !removelist [amount] [userid]\n*Created by Clearclarencs#5659    Not for resale*")
+        elif message.channel.id == wraith_channel_id and amount_type!="run":
             #get the channel
             cart_channel=client.get_channel(cart_channel_id)
             #Send the cart claimer
@@ -151,8 +156,9 @@ async def on_message(message):
                 return str(reaction.message.id)==cart_message_id
             for i in range(20):
                 #waits for a reaction
-                msg, usr = await client.wait_for('reaction_add', check=check)
+                msg, usr = await client.wait_for('reaction_add', check=check, timeout=None)
                 userid=usr.id
+                int(userid)
                 if int(userid)==int(Bots_id):
                     None
                 #Cooldown mode
@@ -249,8 +255,11 @@ async def on_message(message):
                     while True:
                         input("Running but not waiting for carts")
     except:
-        await cart_message.edit(embed=channel_embed_timeout)
-        print("Errrrrr")
-        None
+        try:
+            await cart_message.edit(embed=channel_embed_timeout)
+            print("Errrrrr")
+            None
+        except:
+            None
 
 client.run(bot_token)
