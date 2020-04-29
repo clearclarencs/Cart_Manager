@@ -18,6 +18,8 @@ except:
     quit()
 
 client=commands.Bot(command_prefix="")
+amount_type="run"
+amount_per="0"
 time_claimed={}
 already_claimed=[]
 channel_embed=discord.Embed(title='__CART__', description="React to claim", colour=46336 )
@@ -56,23 +58,22 @@ def cooldown_monitor():
 #Startup program
 @client.event
 async def on_ready():
+    global amount_type
     await client.change_presence(activity=discord.Game("with modes"))
     global Bots_id
     Bots_id=client.user.id
-    if amount_type=="run":
-        print("Running but not waiting for carts")
-    else:  
-        print("Waiting for carts")
 
 
 #when a cart is recieved
 @client.event
 async def on_message(message):
-    global amount_type
+    global amount_type, authorised_list, already_claimed, time_claimed, time_out, amount_per
     try:
         #ensure cart is in correct channel
         if message.content.startswith("help") and message.author.id==admin_id:
-            await message.channel.send("Commands:\n!changemode\n!addlist\n!purgelist\n!showlist")
+            await message.channel.send("Commands:\n!changemode\n!addlist\n!purgelist\n!showlist\nhelp\nmodes")
+        elif message.content.startswith("modes") and message.author.id==admin_id:
+            await message.channel.send("Modes:\nt - Timer mode for a cooldown of claiming carts with a specified time in seconds\na - Amount mode for max number of carts, resets when you change mode\nl - List mode using list edited using commands or Users.txt\nrun - Simply runs the bot without managing carts for you to manage the list between drops")
         elif message.content.startswith("!addlist") and message.author.id==admin_id:
             try:
                 msglist=str(message.content).split(" ")
@@ -96,19 +97,24 @@ async def on_message(message):
             try:
                 msglist=str(message.content).split(" ")
                 if msglist[1] in ["t","a","l","run"]:
+                    time_claimed={}
+                    already_claimed=[]
                     if msglist[1]=="t":
                         amount_type="t"
                         time_out=int(msglist[2])
-                        cooldown_monitor()
+                        x = threading.Thread(target=cooldown_monitor, args=())
+                        x.start()
                         await message.channel.send("Mode changed to: Time")
                         await client.change_presence(activity=discord.Game("in timer mode"))
                     elif msglist[1]=="a":
                         amount_type="a"
                         amount_per=int(msglist[2])
-                        await message.channel.send("Mode changed to: Ammount")
+                        await message.channel.send("Mode changed to: Amount")
                         await client.change_presence(activity=discord.Game("in amount mode"))
                     elif msglist[1]=="l":
                         amount_type="l"
+                        with open ("users.txt","r") as r:
+                            authorised_list=r.read().splitlines()
                         await message.channel.send("Mode changed to: List")
                         await client.change_presence(activity=discord.Game("in list mode"))
                     elif msglist[1]=="run":
@@ -117,8 +123,11 @@ async def on_message(message):
                         await client.change_presence(activity=discord.Game("with modes"))
                     else:
                         raise
+                else:
+                    raise
             except:
                 await message.channel.send("Error, type !changelist [t or a or l or run] [setting if applicable\n*Created by Clearclarencs#5659    Not for resale*")
+                print("Error")
         elif message.content.startswith("!showlist") and message.author.id==admin_id:
             try:
                 with open("users.txt","r") as r:
@@ -158,7 +167,9 @@ async def on_message(message):
                 #waits for a reaction
                 msg, usr = await client.wait_for('reaction_add', check=check, timeout=None)
                 userid=usr.id
+                print("Inting")
                 int(userid)
+                print("Inted")
                 if int(userid)==int(Bots_id):
                     None
                 #Cooldown mode
@@ -251,9 +262,23 @@ async def on_message(message):
                             await dm.send(embed=no())
                         except:
                             print("Could not dm")
+                elif amount_type=="run":
+                    try:
+                        await cart_message.edit(embed=channel_embed_claimed)
+                        dm=client.get_user(userid)
+                        await dm.send(embed=message.embeds[0])
+                        worked= True
+                    except:
+                        worked= False
+                    if worked:
+                        await message.add_reaction("\U00002705")
+                        i=20
+                    break
                 else:
                     while True:
-                        input("Running but not waiting for carts")
+                        input("Error")
+            ow = datetime.now()
+            print("Finished"+str(now.strftime("%H:%M:%S")))
     except:
         try:
             await cart_message.edit(embed=channel_embed_timeout)
