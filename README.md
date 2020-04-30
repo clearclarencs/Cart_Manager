@@ -19,6 +19,7 @@ Discord commands:
 * !addlist x user_id - adds user_id x times to users.txt for list mode\n
 * !purgelist - Purges users.txt
 * !showlist - prints dictionary of users in user.txt
+* !removelist - removes userid form list x times format: !removelist x userid
 
 Dependencies:
 Discord.py
