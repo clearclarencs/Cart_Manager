@@ -13,7 +13,8 @@ Settings are stored in cart_manager_settings.txt in the form:
 Modes:
 * Time - Sets a cooldown for users to claim carts
 * Amount - Amount of carts a user can claim, resets once program closes
-* List - Users.txt is used to store users ids and for each instance their id is there is a cart, this can be managed through dming the bot   and a "run" mode was created for you to edit this file through discord without the cart manager running.
+* List - Users.txt is used to store users ids and for each instance their id is there is a cart, this can be managed through dming the bot.
+* A "run" mode was created for you to edit this file through discord without the cart manager running.
 
 Discord commands:
 * !changemode mode setting_if_needed change mode (moodes:t,a,l,run)t need setting as cooldown in seconds and amount for amount of times.
