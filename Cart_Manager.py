@@ -10,7 +10,7 @@ try:
         settings=r.read().splitlines()
     wraith_channel_id=int(settings[0])
     cart_channel_id=int(settings[1])
-    admin_id=int(settings[2])
+    admin_role_id=int(settings[2])
     bot_token=settings[3]
 except:
     print("Failed to import settings, error occured please check.")
@@ -67,14 +67,19 @@ async def on_ready():
 #when a cart is recieved
 @client.event
 async def on_message(message):
+    user=message.author
     global amount_type, authorised_list, already_claimed, time_claimed, time_out, amount_per
     try:
         #ensure cart is in correct channel
-        if message.content.startswith("help") and message.author.id==admin_id:
-            await message.channel.send("Commands:\n!changemode\n!addlist\n!purgelist\n!showlist\nhelp\nmodes")
-        elif message.content.startswith("modes") and message.author.id==admin_id:
+        try:
+            role = discord.utils.get(message.guild.roles, id=int(admin_role_id))
+        except:
+            print("Couldnt get roles (error or dmed)")
+        if message.content.startswith("help") and role in message.author.roles:
+            await message.channel.send("Commands:\n!changemode\n!addlist\n!purgelist\n!showlist\n!removelist\nhelp\nmodes")
+        elif message.content.startswith("modes") and role in message.author.roles:
             await message.channel.send("Modes:\nt - Timer mode for a cooldown of claiming carts with a specified time in seconds\na - Amount mode for max number of carts, resets when you change mode\nl - List mode using list edited using commands or Users.txt\nrun - Simply runs the bot without managing carts for you to manage the list between drops")
-        elif message.content.startswith("!addlist") and message.author.id==admin_id:
+        elif message.content.startswith("!addlist") and role in message.author.roles:
             try:
                 msglist=str(message.content).split(" ")
                 if len(msglist)!=3:
@@ -86,14 +91,14 @@ async def on_message(message):
                 await message.channel.send("Added "+str(msglist[2])+" "+str(msglist[1])+" times.\n*Created by Clearclarencs#5659    Not for resale*")
             except:
                 await message.channel.send("Incorrect format, send !add [amount] [user id]\n*Created by Clearclarencs#5659    Not for resale*")
-        elif message.content.startswith("!purgelist") and message.author.id==admin_id:
+        elif message.content.startswith("!purgelist") and role in message.author.roles:
             try:
                 with open("users.txt","w") as r:
                     r.write("")
                 await message.channel.send("Purged\n*Created by Clearclarencs#5659    Not for resale*")
             except:
                 await message.channel.send("Error\n*Created by Clearclarencs#5659    Not for resale*")
-        elif message.content.startswith("!changemode") and message.author.id==admin_id:
+        elif message.content.startswith("!changemode") and role in message.author.roles:
             try:
                 msglist=str(message.content).split(" ")
                 if msglist[1] in ["t","a","l","run"]:
@@ -104,18 +109,18 @@ async def on_message(message):
                         time_out=int(msglist[2])
                         x = threading.Thread(target=cooldown_monitor, args=())
                         x.start()
-                        await message.channel.send("Mode changed to: Time")
+                        await message.channel.send("Mode changed to: Time\n*Created by Clearclarencs#5659    Not for resale*")
                         await client.change_presence(activity=discord.Game("in timer mode"))
                     elif msglist[1]=="a":
                         amount_type="a"
                         amount_per=int(msglist[2])
-                        await message.channel.send("Mode changed to: Amount")
+                        await message.channel.send("Mode changed to: Amount\n*Created by Clearclarencs#5659    Not for resale*")
                         await client.change_presence(activity=discord.Game("in amount mode"))
                     elif msglist[1]=="l":
                         amount_type="l"
                         with open ("users.txt","r") as r:
                             authorised_list=r.read().splitlines()
-                        await message.channel.send("Mode changed to: List")
+                        await message.channel.send("Mode changed to: List\n*Created by Clearclarencs#5659    Not for resale*")
                         await client.change_presence(activity=discord.Game("in list mode"))
                     elif msglist[1]=="run":
                         amount_type="run"
@@ -128,18 +133,18 @@ async def on_message(message):
             except:
                 await message.channel.send("Error, type !changelist [t or a or l or run] [setting if applicable\n*Created by Clearclarencs#5659    Not for resale*")
                 print("Error")
-        elif message.content.startswith("!showlist") and message.author.id==admin_id:
+        elif message.content.startswith("!showlist") and role in message.author.roles:
             try:
                 with open("users.txt","r") as r:
                     usrs=Counter(r.read().splitlines())
                 await message.channel.send(str(usrs)+"\n*Created by Clearclarencs#5659    Not for resale*")
             except:
                 await message.channel.send("Error\n*Created by Clearclarencs#5659    Not for resale*")
-        elif message.content.startswith("!showlist") and message.author.id==admin_id:
+        elif message.content.startswith("!removelist") and role in message.author.roles:
             try:
                 msglist=str(message.content).split(" ")
                 with open("users.txt","r") as r:
-                    usrs=Counter(r.read().splitlines())
+                    usrs=r.read().splitlines()
                 for i in range(int(msglist[1])):
                     usrs.remove(str(msglist[2]))
                 with open("users.txt","w") as r:
@@ -276,15 +281,16 @@ async def on_message(message):
                     break
                 else:
                     while True:
-                        input("Error")
+                        print("Error")
+                        time.sleep(10)
+                        quit()
             ow = datetime.now()
             print("Finished"+str(now.strftime("%H:%M:%S")))
     except:
         try:
             await cart_message.edit(embed=channel_embed_timeout)
             print("Errrrrr")
-            None
         except:
-            None
+            print("Error")
 
 client.run(bot_token)
