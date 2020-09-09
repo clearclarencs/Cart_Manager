@@ -23,7 +23,3 @@ Discord commands:
 * !showlist - prints dictionary of users in user.txt
 * !removelist - removes userid form list x times format: !removelist x userid
 Must use these commands within the server as roles are only present there
-
-Dependencies:
-Discord.py
-Request
